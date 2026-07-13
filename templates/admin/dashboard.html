@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Burrow - Dashboard{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="card">
+  <h2>Status</h2>
+  <table>
+    <tr><th>Version</th><td>{{ version }}</td></tr>
+    <tr>
+      <th>Tunnel</th>
+      <td>
+        {% if has_tunnel %}
+          <span class="badge badge-green">Active</span>
+          <span class="url-box">{{ tunnel_url }}</span>
+        {% else %}
+          <span class="badge badge-gray">Disabled</span>
+        {% endif %}
+      </td>
+    </tr>
+    <tr><th>Shares</th><td>{{ share_count }}</td></tr>
+    <tr><th>Serve Dir</th><td><code>{{ serve_dir }}</code></td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <div class="flex mb-1">
+    <h2>Active Shares</h2>
+    <a href="/admin/shares/new" class="btn btn-primary btn-sm">New Share</a>
+  </div>
+
+  {% if shares.is_empty() %}
+    <p class="empty">No shares configured.</p>
+  {% else %}
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Mode</th>
+          <th>Path</th>
+          <th>Expires</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="shares-list">
+        {% for share in shares %}
+        <tr id="share-{{ share.id }}">
+          <td><strong>{{ share.id }}</strong></td>
+          <td><span class="badge {{ share.mode_badge }}">{{ share.mode }}</span></td>
+          <td><code>{{ share.path }}</code></td>
+          <td><span class="muted">{{ share.expires }}</span></td>
+          <td>
+            <a href="/admin/shares/{{ share.id }}" class="btn btn-sm">Edit</a>
+            <button class="btn btn-sm btn-danger"
+                    hx-delete="/admin/shares/{{ share.id }}"
+                    hx-target="#share-{{ share.id }}"
+                    hx-swap="outerHTML"
+                    hx-confirm="Delete share '{{ share.id }}'?">
+              Delete
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>
+{% endblock %}

@@ -113,6 +113,11 @@ impl ShareStore {
         shares.values().cloned().collect()
     }
 
+    pub async fn replace(&self, id: &str, share: Share) {
+        let mut shares = self.shares.write().await;
+        shares.insert(id.to_string(), share);
+    }
+
     pub async fn delete(&self, id: &str) -> bool {
         let mut shares = self.shares.write().await;
         shares.remove(id).is_some()

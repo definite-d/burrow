@@ -33,23 +33,16 @@ async fn main() {
     tracing::info!("Serving: {}", serve_dir.display());
     tracing::info!("Listening on {addr}");
 
+    let mut tunnel_handle: Option<tunnel::spawned::SpawnedTunnel> = None;
+    let mut tunnel_url = String::new();
+
     if config.tunnel_enabled() {
         tracing::info!("Tunnel: enabled (cloudflared)");
-    } else {
-        tracing::info!("Tunnel: disabled");
-    }
-
-    let app = server::router(serve_dir, share_store);
-
-    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-
-    let mut tunnel_handle: Option<tunnel::spawned::SpawnedTunnel> = None;
-
-    if config.tunnel_enabled() {
         let mut spawned = tunnel::spawned::SpawnedTunnel::new();
         match spawned.start(config.port()).await {
             Ok(url) => {
                 tracing::info!("Public URL: {url}");
+                tunnel_url = url;
                 tunnel_handle = Some(spawned);
             }
             Err(e) => {
@@ -57,7 +50,13 @@ async fn main() {
                 eprintln!("Starting in local-only mode.");
             }
         }
+    } else {
+        tracing::info!("Tunnel: disabled");
     }
+
+    let app = server::router(serve_dir, share_store, tunnel_url);
+
+    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())

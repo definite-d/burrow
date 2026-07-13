@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Burrow - Edit Share{% endblock %}
+{% block content %}
+<h1>Edit Share: {{ share.id }}</h1>
+
+<div class="card">
+  <form hx-put="/admin/shares/{{ share.id }}"
+        hx-target="#result"
+        hx-swap="innerHTML">
+    <div class="form-row">
+      <div class="form-group">
+        <label for="id">Share ID</label>
+        <input type="text" id="id" name="id" value="{{ share.id }}" disabled>
+      </div>
+      <div class="form-group">
+        <label for="mode">Mode</label>
+        <select id="mode" name="mode">
+          <option value="download" {% if share.mode == "Download" %}selected{% endif %}>Download</option>
+          <option value="upload" {% if share.mode == "Upload" %}selected{% endif %}>Upload</option>
+          <option value="both" {% if share.mode == "Both" %}selected{% endif %}>Both</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="path">Directory Path</label>
+      <input type="text" id="path" name="path" value="{{ share.path }}" disabled>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="expires">Expires</label>
+        <input type="text" id="expires" value="{{ share.expires }}" disabled>
+      </div>
+      <div class="form-group">
+        <label>Max Upload Size</label>
+        <input type="text" value="{{ share.max_upload_size }}" disabled>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>
+        <input type="checkbox" name="allow_archive" value="true"
+               {% if share.allow_archive %}checked{% endif %}>
+        Allow archive download (.zip)
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label>Token</label>
+      <div class="url-box" style="display: block; padding: 0.5rem;">
+        <code>/share/{{ share.token }}</code>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Update</button>
+    <a href="/admin/shares" class="btn">Back</a>
+  </form>
+
+  <div id="result" style="margin-top: 1rem;"></div>
+</div>
+{% endblock %}

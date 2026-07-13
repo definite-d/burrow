@@ -23,6 +23,8 @@ pub async fn health() -> StatusCode {
 #[derive(Clone)]
 pub struct AppState {
     pub share_store: Arc<ShareStore>,
+    pub tunnel_url: String,
+    pub serve_dir: String,
 }
 
 #[derive(Serialize)]
