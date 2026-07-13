@@ -1,4 +1,5 @@
 use clap::Parser;
+use std::sync::Arc;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod config;
@@ -24,12 +25,14 @@ async fn main() {
     let addr = format!("{}:{}", config.host(), config.port());
     let serve_dir = config.dir();
 
+    let share_store = Arc::new(share::ShareStore::new());
+
     tracing::info!("Burrow v{}", env!("CARGO_PKG_VERSION"));
     tracing::info!("Serving: {}", serve_dir.display());
     tracing::info!("Listening on {addr}");
     tracing::info!("Tunnel: {}", if config.tunnel_enabled() { "enabled" } else { "disabled" });
 
-    let app = server::router(serve_dir);
+    let app = server::router(serve_dir, share_store);
 
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app)
