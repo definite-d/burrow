@@ -29,6 +29,14 @@ async fn main() {
 
     let share_store = Arc::new(share::ShareStore::new());
 
+    let config_shares = config.config_shares();
+    if !config_shares.is_empty() {
+        match share_store.load_from_config(config_shares).await {
+            Ok(loaded) => tracing::info!("Loaded {} shares from config", loaded.len()),
+            Err(e) => tracing::warn!("Error loading config shares: {e}"),
+        }
+    }
+
     tracing::info!("Burrow v{}", env!("CARGO_PKG_VERSION"));
     tracing::info!("Serving: {}", serve_dir.display());
     tracing::info!("Listening on {addr}");

@@ -3,6 +3,7 @@ use serde::Deserialize;
 use std::path::PathBuf;
 
 use crate::filter;
+use crate::share;
 
 #[derive(Debug, Parser)]
 #[command(name = "burrow", about = "Share folders over the internet")]
@@ -33,6 +34,7 @@ pub struct Config {
     pub server: Option<ServerConfig>,
     pub tunnel: Option<TunnelConfig>,
     pub admin: Option<AdminConfig>,
+    pub shares: Option<Vec<share::ConfigShare>>,
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -162,5 +164,9 @@ impl Config {
             .as_ref()
             .and_then(|a| a.enabled)
             .unwrap_or(true)
+    }
+
+    pub fn config_shares(&self) -> &[share::ConfigShare] {
+        self.shares.as_deref().unwrap_or(&[])
     }
 }

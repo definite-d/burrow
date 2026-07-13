@@ -9,3 +9,20 @@ enabled = true
 [admin]
 enabled = true
 # token = "optional-admin-secret"
+
+# Folders to expose
+# [[shares]]
+# id = "docs"
+# path = "./documents"
+# # mode = "download"  # default: download, upload, or both
+# # token = "my-secret-token"  # optional
+# # expires = "24h"
+# # max_size = "100MB"
+# # allowed_types = ["*.pdf", "*.png", "*.jpg"]
+# # allow_archive = true
+
+# [[shares]]
+# id = "dropbox"
+# mode = "upload"
+# path = "./uploads"
+# max_size = "50MB"
