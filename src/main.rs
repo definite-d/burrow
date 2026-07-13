@@ -7,6 +7,8 @@ mod error;
 mod filter;
 mod server;
 mod share;
+mod tunnel;
+use tunnel::Tunnel;
 
 #[tokio::main]
 async fn main() {
@@ -30,11 +32,30 @@ async fn main() {
     tracing::info!("Burrow v{}", env!("CARGO_PKG_VERSION"));
     tracing::info!("Serving: {}", serve_dir.display());
     tracing::info!("Listening on {addr}");
-    tracing::info!("Tunnel: {}", if config.tunnel_enabled() { "enabled" } else { "disabled" });
+
+    if config.tunnel_enabled() {
+        tracing::info!("Tunnel: enabled (cloudflared)");
+    } else {
+        tracing::info!("Tunnel: disabled");
+    }
 
     let app = server::router(serve_dir, share_store);
 
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+
+    if config.tunnel_enabled() {
+        let tunnel = tunnel::spawned::SpawnedTunnel::new();
+        match tunnel.start(config.port()).await {
+            Ok(url) => {
+                tracing::info!("Public URL: {url}");
+            }
+            Err(e) => {
+                eprintln!("Failed to start tunnel: {e}");
+                eprintln!("Starting in local-only mode.");
+            }
+        }
+    }
+
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await
