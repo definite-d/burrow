@@ -106,8 +106,11 @@ impl Drop for SpawnedTunnel {
 fn parse_tunnel_url(line: &str) -> Option<String> {
     let idx = line.find("https://")?;
     let rest = &line[idx..];
+    if !rest.contains("trycloudflare.com") {
+        return None;
+    }
     let end = rest
-        .find(|c: char| c.is_whitespace() || c == '"' || c == '\'')
+        .find(|c: char| c.is_whitespace() || c == '"' || c == '\'' || c == ')' || c == ',')
         .unwrap_or(rest.len());
     Some(rest[..end].to_string())
 }
