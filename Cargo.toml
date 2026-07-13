@@ -14,3 +14,4 @@ toml = "1.1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 mime_guess = "2.0"
+glob = "0.3"

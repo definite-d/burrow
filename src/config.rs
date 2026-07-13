@@ -2,6 +2,8 @@ use clap::Parser;
 use serde::Deserialize;
 use std::path::PathBuf;
 
+use crate::filter;
+
 #[derive(Debug, Parser)]
 #[command(name = "burrow", about = "Share folders over the internet")]
 pub struct Cli {
@@ -49,6 +51,45 @@ pub struct TunnelConfig {
 pub struct AdminConfig {
     pub enabled: Option<bool>,
     pub token: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+pub struct FilterConfig {
+    pub allowed_types: Option<Vec<String>>,
+    pub blocked_types: Option<Vec<String>>,
+    pub allowed_patterns: Option<Vec<String>>,
+    pub blocked_patterns: Option<Vec<String>>,
+    pub min_size: Option<String>,
+    pub max_size: Option<String>,
+}
+
+impl FilterConfig {
+    pub fn to_filter_chain(&self) -> Result<filter::FilterChain, String> {
+        let mut chain = filter::FilterChain::new();
+
+        if let Some(types) = &self.allowed_types {
+            if !types.is_empty() {
+                chain.add(Box::new(filter::TypeFilter::new(types.clone(), vec![])));
+            }
+        }
+
+        if let Some(min) = &self.min_size {
+            let min_bytes = filter::parse_size(min)?;
+            chain.add(Box::new(filter::SizeFilter::new(Some(min_bytes), None)));
+        }
+        if let Some(max) = &self.max_size {
+            let max_bytes = filter::parse_size(max)?;
+            chain.add(Box::new(filter::SizeFilter::new(None, Some(max_bytes))));
+        }
+
+        if let Some(patterns) = &self.allowed_patterns {
+            if !patterns.is_empty() {
+                chain.add(Box::new(filter::PatternFilter::new(patterns.clone())));
+            }
+        }
+
+        Ok(chain)
+    }
 }
 
 impl Config {
