@@ -21,11 +21,10 @@ impl Default for SpawnedTunnel {
 
 impl Tunnel for SpawnedTunnel {
     fn start(
-        &self,
+        &mut self,
         port: u16,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send>>
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>>
     {
-        let port = port;
         Box::pin(async move {
             let which = Command::new("which")
                 .arg("cloudflared")
@@ -80,13 +79,27 @@ impl Tunnel for SpawnedTunnel {
             };
 
             let _ = child.stdout.take();
+            self.child = Some(child);
 
             Ok(url)
         })
     }
 
-    fn stop(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>> {
-        Box::pin(async {})
+    fn stop(&mut self) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + '_>> {
+        Box::pin(async {
+            if let Some(mut child) = self.child.take() {
+                tracing::info!("Stopping cloudflared tunnel");
+                let _ = child.kill().await;
+            }
+        })
+    }
+}
+
+impl Drop for SpawnedTunnel {
+    fn drop(&mut self) {
+        if let Some(ref mut child) = self.child {
+            let _ = child.start_kill();
+        }
     }
 }
 

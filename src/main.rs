@@ -43,11 +43,14 @@ async fn main() {
 
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
 
+    let mut tunnel_handle: Option<tunnel::spawned::SpawnedTunnel> = None;
+
     if config.tunnel_enabled() {
-        let tunnel = tunnel::spawned::SpawnedTunnel::new();
-        match tunnel.start(config.port()).await {
+        let mut spawned = tunnel::spawned::SpawnedTunnel::new();
+        match spawned.start(config.port()).await {
             Ok(url) => {
                 tracing::info!("Public URL: {url}");
+                tunnel_handle = Some(spawned);
             }
             Err(e) => {
                 eprintln!("Failed to start tunnel: {e}");
@@ -60,6 +63,10 @@ async fn main() {
         .with_graceful_shutdown(shutdown_signal())
         .await
         .unwrap();
+
+    if let Some(mut tunnel) = tunnel_handle {
+        tunnel.stop().await;
+    }
 }
 
 async fn shutdown_signal() {
