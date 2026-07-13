@@ -5,6 +5,7 @@ mod config;
 mod error;
 mod filter;
 mod server;
+mod share;
 
 #[tokio::main]
 async fn main() {
