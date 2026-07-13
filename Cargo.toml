@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 axum = { version = "0.8", features = ["multipart"] }
 tokio = { version = "1", features = ["full"] }
-tower-http = { version = "0.7", features = ["fs", "trace", "cors"] }
+tower-http = { version = "0.7", features = ["fs", "trace", "cors", "limit"] }
 tower = "0.5"
 clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
@@ -26,3 +26,7 @@ tokio-util = "0.7"
 async-stream = "0.3"
 askama = "0.15"
 axum-htmx = "0.8"
+
+[dev-dependencies]
+tempfile = "3"
+urlencoding = "2"

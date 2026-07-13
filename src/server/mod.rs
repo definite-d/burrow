@@ -4,6 +4,7 @@ pub mod templates;
 use axum::Router;
 use std::path::PathBuf;
 use std::sync::Arc;
+use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 
@@ -36,7 +37,8 @@ pub fn router(
         .route("/share/{token}", axum::routing::get(routes::public::share_entry))
         .route("/share/{token}/{*path}", axum::routing::get(routes::public::share_file))
         .route("/share/{token}", axum::routing::post(routes::public::share_upload))
-        .nest_service("/", service)
+        .fallback_service(service)
         .with_state(state)
+        .layer(RequestBodyLimitLayer::new(250 * 1024 * 1024))
         .layer(TraceLayer::new_for_http())
 }

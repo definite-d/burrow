@@ -2,13 +2,9 @@ use clap::Parser;
 use std::sync::Arc;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-mod config;
-mod error;
-mod filter;
-mod server;
-mod share;
-mod tunnel;
-use tunnel::Tunnel;
+use burrow::config;
+use burrow::share;
+use burrow::tunnel::{self, Tunnel};
 
 #[tokio::main]
 async fn main() {
@@ -62,14 +58,20 @@ async fn main() {
         tracing::info!("Tunnel: disabled");
     }
 
-    let app = server::router(serve_dir, share_store, tunnel_url);
+    let app = burrow::server::router(serve_dir, share_store, tunnel_url);
 
-    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap_or_else(|e| {
+        eprintln!("Failed to bind to {addr}: {e}");
+        std::process::exit(1);
+    });
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await
-        .unwrap();
+        .unwrap_or_else(|e| {
+            eprintln!("Server error: {e}");
+            std::process::exit(1);
+        });
 
     if let Some(mut tunnel) = tunnel_handle {
         tunnel.stop().await;
