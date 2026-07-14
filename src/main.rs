@@ -40,6 +40,11 @@ async fn main() {
     let mut tunnel_handle: Option<tunnel::spawned::SpawnedTunnel> = None;
     let mut tunnel_url = String::new();
 
+    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap_or_else(|e| {
+        eprintln!("Failed to bind to {addr}: {e}");
+        std::process::exit(1);
+    });
+
     if config.tunnel_enabled() {
         tracing::info!("Tunnel: enabled (cloudflared)");
         let mut spawned = tunnel::spawned::SpawnedTunnel::new();
@@ -59,11 +64,6 @@ async fn main() {
     }
 
     let app = burrow::server::router(serve_dir, share_store, tunnel_url);
-
-    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap_or_else(|e| {
-        eprintln!("Failed to bind to {addr}: {e}");
-        std::process::exit(1);
-    });
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())

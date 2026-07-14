@@ -11,12 +11,14 @@ use crate::server::routes::public::AppState;
 
 pub async fn dashboard(State(state): State<AppState>) -> Result<Html<String>, AppError> {
     let shares = state.share_store.list().await;
-    let share_views: Vec<ShareView> = shares.iter().map(ShareView::from).collect();
+    let share_views: Vec<ShareView> = shares.iter()
+        .map(|s| ShareView::from_share(s, &state.tunnel_url))
+        .collect();
 
     let tpl = DashboardTemplate {
         version: env!("CARGO_PKG_VERSION").into(),
         tunnel_url: state.tunnel_url.clone(),
-        has_tunnel: state.tunnel_url.is_empty(),
+        has_tunnel: !state.tunnel_url.is_empty(),
         share_count: share_views.len(),
         serve_dir: state.serve_dir.clone(),
         shares: share_views,
@@ -30,12 +32,14 @@ pub async fn shares_list(
     State(state): State<AppState>,
 ) -> Result<Response, AppError> {
     let shares = state.share_store.list().await;
-    let share_views: Vec<ShareView> = shares.iter().map(ShareView::from).collect();
+    let share_views: Vec<ShareView> = shares.iter()
+        .map(|s| ShareView::from_share(s, &state.tunnel_url))
+        .collect();
 
     let tpl = DashboardTemplate {
         version: env!("CARGO_PKG_VERSION").into(),
         tunnel_url: state.tunnel_url.clone(),
-        has_tunnel: state.tunnel_url.is_empty(),
+        has_tunnel: !state.tunnel_url.is_empty(),
         share_count: share_views.len(),
         serve_dir: state.serve_dir.clone(),
         shares: share_views,
@@ -118,7 +122,7 @@ pub async fn share_edit(
         .await
         .ok_or_else(|| AppError::NotFound(format!("share '{id}' not found")))?;
 
-    let view = ShareView::from(&share);
+    let view = ShareView::from_share(&share, &state.tunnel_url);
     let tpl = ShareEditTemplate { share: view };
     let html = tpl.render().map_err(|e| AppError::Internal(e.to_string()))?;
     Ok(Html(html))

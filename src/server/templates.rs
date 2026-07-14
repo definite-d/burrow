@@ -2,6 +2,27 @@ use askama::Template;
 
 use crate::share::Share;
 
+pub fn qr_svg(url: &str) -> String {
+    use qrcode::QrCode;
+    use qrcode::render::svg;
+    let code = match QrCode::new(url.as_bytes()) {
+        Ok(c) => c,
+        Err(_) => return String::new(),
+    };
+    code.render::<svg::Color>()
+        .min_dimensions(160, 160)
+        .max_dimensions(200, 200)
+        .build()
+}
+
+pub fn full_share_url(tunnel_url: &str, token: &str) -> String {
+    if tunnel_url.is_empty() {
+        format!("/share/{token}")
+    } else {
+        format!("{tunnel_url}/share/{token}")
+    }
+}
+
 #[derive(Template)]
 #[template(path = "base.html")]
 pub struct BaseTemplate {
@@ -18,20 +39,26 @@ pub struct ShareView {
     pub expires: String,
     pub allow_archive: bool,
     pub max_upload_size: String,
+    pub share_url: String,
+    pub share_url_local: String,
+    pub qr_svg: String,
 }
 
-impl From<&Share> for ShareView {
-    fn from(share: &Share) -> Self {
+impl ShareView {
+    pub fn from_share(share: &Share, tunnel_url: &str) -> Self {
         let (mode, mode_badge) = match &share.mode {
-            crate::share::ShareMode::Download => ("Download", "badge-green"),
-            crate::share::ShareMode::Upload => ("Upload", "badge-yellow"),
-            crate::share::ShareMode::Both => ("Both", "badge-gray"),
+            crate::share::ShareMode::Download => ("Download", "badge-download"),
+            crate::share::ShareMode::Upload => ("Upload", "badge-upload"),
+            crate::share::ShareMode::Both => ("Both", "badge-both"),
         };
         let expires = share
             .expires
             .map(|e| e.format("%Y-%m-%d %H:%M").to_string())
             .unwrap_or_else(|| "Never".into());
         let max_upload_size = format_bytes(share.max_upload_size);
+        let share_url = full_share_url(tunnel_url, &share.token);
+        let share_url_local = format!("/share/{}", share.token);
+        let qr_svg = qr_svg(&share_url);
         Self {
             id: share.id.clone(),
             token: share.token.clone(),
@@ -41,6 +68,9 @@ impl From<&Share> for ShareView {
             expires,
             allow_archive: share.allow_archive,
             max_upload_size,
+            share_url,
+            share_url_local,
+            qr_svg,
         }
     }
 }
@@ -76,4 +106,39 @@ pub struct ShareFormTemplate;
 #[template(path = "admin/share_edit.html")]
 pub struct ShareEditTemplate {
     pub share: ShareView,
+}
+
+#[derive(Clone)]
+pub struct Breadcrumb {
+    pub name: String,
+    pub path: String,
+}
+
+#[derive(Clone)]
+pub struct FileEntry {
+    pub name: String,
+    pub path: String,
+    pub is_dir: bool,
+    pub size: u64,
+    pub size_human: String,
+    pub mime_type: String,
+    pub date_modified: String,
+}
+
+#[derive(Template)]
+#[template(path = "share.html")]
+pub struct ShareTemplate {
+    pub share_id: String,
+    pub token: String,
+    pub mode_label: String,
+    pub mode_badge: String,
+    pub is_expired: bool,
+    pub allows_download: bool,
+    pub allows_upload: bool,
+    pub allow_archive: bool,
+    pub max_upload_size: String,
+    pub breadcrumbs: Vec<Breadcrumb>,
+    pub files: Vec<FileEntry>,
+    pub file_count: usize,
+    pub file_count_suffix: String,
 }

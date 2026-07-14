@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ share_id }} — Burrow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Outfit:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8f5f0;
+      --surface: #ffffff;
+      --border: #e8e2d9;
+      --border-strong: #d4ccc0;
+      --text: #2c2416;
+      --text-secondary: #7a6e5f;
+      --text-muted: #a89d8e;
+      --accent: #c2752e;
+      --accent-hover: #a8631f;
+      --accent-bg: #fdf4ec;
+      --accent-border: #f0d4b5;
+      --download: #3d7a5a;
+      --download-bg: #ecf5f0;
+      --download-border: #b5deca;
+      --upload: #b8860b;
+      --upload-bg: #fdf8ec;
+      --upload-border: #e8d9a0;
+      --both: #6b5b95;
+      --both-bg: #f2eff8;
+      --both-border: #cfc8e8;
+      --danger: #b44a3f;
+      --radius: 6px;
+      --font-display: 'Instrument Serif', Georgia, serif;
+      --font-body: 'Outfit', system-ui, sans-serif;
+      --font-mono: 'Fira Code', 'Menlo', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-body);
+      line-height: 1.6;
+      color: var(--text);
+      background: var(--bg);
+      max-width: 940px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem;
+    }
+    .header {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .header h1 {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      letter-spacing: -0.01em;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .badge-download { background: var(--download-bg); color: var(--download); border: 1px solid var(--download-border); }
+    .badge-upload { background: var(--upload-bg); color: var(--upload); border: 1px solid var(--upload-border); }
+    .badge-both { background: var(--both-bg); color: var(--both); border: 1px solid var(--both-border); }
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+      margin-bottom: 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+    }
+    .breadcrumb a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .breadcrumb a:hover { color: var(--accent-hover); text-decoration: underline; }
+    .breadcrumb .sep { color: var(--border-strong); margin: 0 0.2rem; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .file-table { width: 100%; border-collapse: collapse; }
+    .file-table th {
+      font-family: var(--font-mono);
+      font-weight: 500;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      text-align: left;
+      padding: 0.4rem 0.6rem;
+      border-bottom: 2px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .file-table th:hover { color: var(--text-secondary); }
+    .file-table th .arrow { font-size: 0.6rem; margin-left: 0.25rem; opacity: 0.4; }
+    .file-table th.sorted .arrow { opacity: 1; color: var(--accent); }
+    .file-table td {
+      padding: 0.55rem 0.6rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+      vertical-align: middle;
+    }
+    .file-table tr:last-child td { border-bottom: none; }
+    .file-table tr:hover td { background: var(--surface-raised, #fdfcfa); }
+    .file-name-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .file-icon { flex-shrink: 0; font-size: 1rem; width: 1.25rem; text-align: center; }
+    .file-name a {
+      font-family: var(--font-mono);
+      font-size: 0.84rem;
+      color: var(--text);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .file-name a:hover { color: var(--accent); }
+    .file-name a.dir-link { color: var(--accent); font-weight: 500; }
+    .file-size, .file-type, .file-date {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .file-actions { text-align: right; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.3rem 0.6rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 500;
+      text-decoration: none;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .btn:hover { border-color: var(--border-strong); }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .actions-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .actions-bar .title {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+    }
+    .actions-bar .count {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-muted);
+    }
+    .empty-icon { font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.4; }
+    .upload-zone {
+      border: 2px dashed var(--border-strong);
+      border-radius: var(--radius);
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+      cursor: pointer;
+      position: relative;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+    }
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .upload-zone-text { pointer-events: none; }
+    .upload-zone-icon { font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.5; }
+    .upload-zone-hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+    .upload-progress {
+      margin-top: 0.75rem;
+      display: none;
+    }
+    .upload-progress.active { display: block; }
+    .progress-bar {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.2s;
+    }
+    .progress-text {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+    }
+    .expired-msg { text-align: center; padding: 3rem 1rem; }
+    .expired-msg h2 {
+      font-family: var(--font-display); font-size: 1.5rem;
+      color: var(--danger); margin-bottom: 0.5rem;
+    }
+    .expired-msg p { color: var(--text-muted); }
+    .footer {
+      text-align: center; margin-top: 2.5rem; padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.72rem; color: var(--text-muted);
+      letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500;
+    }
+    @media (max-width: 640px) {
+      .file-table .hide-mobile { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>{{ share_id }}</h1>
+    <span class="badge {{ mode_badge }}">{{ mode_label }}</span>
+  </div>
+
+  {% if is_expired %}
+    <div class="card expired-msg">
+      <h2>Share Expired</h2>
+      <p>This share is no longer accessible.</p>
+    </div>
+  {% else %}
+
+  {% if !breadcrumbs.is_empty() %}
+  <nav class="breadcrumb">
+    <a href="/share/{{ token }}">/</a>
+    {% for crumb in breadcrumbs %}
+      <span class="sep">/</span>
+      <a href="/share/{{ token }}/{{ crumb.path }}">{{ crumb.name }}</a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+
+  {% if allows_upload %}
+  <div class="card">
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" id="file-input" multiple>
+      <div class="upload-zone-text">
+        <div class="upload-zone-icon">&#8593;</div>
+        <div>Drop files here or click to upload</div>
+        <div class="upload-zone-hint">Max size: {{ max_upload_size }}</div>
+      </div>
+    </div>
+    <div class="upload-progress" id="upload-progress">
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="progress-text" id="progress-text"></div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="actions-bar">
+      <span class="title">Files</span>
+      <span class="count">{{ file_count }} item{{ file_count_suffix }}</span>
+      <div style="flex: 1;"></div>
+      {% if allows_download && allow_archive %}
+        <a href="/share/{{ token }}?archive=zip" class="btn">Download .zip</a>
+      {% endif %}
+    </div>
+
+    {% if files.is_empty() %}
+      <div class="empty">
+        <div class="empty-icon">&#128193;</div>
+        <div>Empty folder</div>
+      </div>
+    {% else %}
+      <table class="file-table" id="file-table">
+        <thead>
+          <tr>
+            <th class="sorted" data-col="name" data-type="string">Name <span class="arrow">&#9650;</span></th>
+            <th class="hide-mobile" data-col="size" data-type="number">Size <span class="arrow">&#9650;</span></th>
+            <th class="hide-mobile" data-col="type" data-type="string">Type <span class="arrow">&#9650;</span></th>
+            <th class="hide-mobile" data-col="date" data-type="date">Modified <span class="arrow">&#9650;</span></th>
+            {% if allows_download %}
+            <th style="width: 80px;"></th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for file in files %}
+          <tr data-name="{{ file.name }}" data-size="{{ file.size }}" data-type="{{ file.mime_type }}" data-date="{{ file.date_modified }}" data-isdir="{% if file.is_dir %}1{% else %}0{% endif %}">
+            <td>
+              <div class="file-name-cell">
+                <span class="file-icon">{% if file.is_dir %}&#128193;{% else %}&#128196;{% endif %}</span>
+                <span class="file-name">
+                  {% if file.is_dir %}
+                    <a href="/share/{{ token }}/{{ file.path }}" class="dir-link">{{ file.name }}/</a>
+                  {% elif allows_download %}
+                    <a href="/share/{{ token }}/{{ file.path }}">{{ file.name }}</a>
+                  {% else %}
+                    {{ file.name }}
+                  {% endif %}
+                </span>
+              </div>
+            </td>
+            <td class="file-size hide-mobile">{% if !file.is_dir %}{{ file.size_human }}{% endif %}</td>
+            <td class="file-type hide-mobile">{% if !file.is_dir %}{{ file.mime_type }}{% endif %}</td>
+            <td class="file-date hide-mobile">{{ file.date_modified }}</td>
+            {% if allows_download %}
+            <td class="file-actions">
+              {% if !file.is_dir %}
+                <a href="/share/{{ token }}/{{ file.path }}" class="btn" download>Download</a>
+              {% endif %}
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+  </div>
+
+  {% endif %}
+
+  <div class="footer">Burrow</div>
+
+  <script>
+    // Sorting
+    const table = document.getElementById('file-table');
+    if (table) {
+      let sortCol = 'name', sortAsc = true;
+      const tbody = table.querySelector('tbody');
+      const headers = table.querySelectorAll('th[data-col]');
+
+      headers.forEach(th => {
+        th.addEventListener('click', () => {
+          const col = th.dataset.col;
+          const type = th.dataset.type;
+          if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = true; }
+          headers.forEach(h => h.classList.remove('sorted'));
+          th.classList.add('sorted');
+          th.querySelector('.arrow').innerHTML = sortAsc ? '&#9650;' : '&#9660;';
+
+          const rows = Array.from(tbody.querySelectorAll('tr'));
+          rows.sort((a, b) => {
+            let va, vb;
+            if (col === 'name') {
+              va = a.dataset.isdir + a.dataset.name.toLowerCase();
+              vb = b.dataset.isdir + b.dataset.name.toLowerCase();
+            } else if (col === 'size') {
+              va = parseInt(a.dataset.size || '0');
+              vb = parseInt(b.dataset.size || '0');
+              return sortAsc ? va - vb : vb - va;
+            } else if (col === 'date') {
+              va = a.dataset.date;
+              vb = b.dataset.date;
+            } else {
+              va = a.dataset[col] || '';
+              vb = b.dataset[col] || '';
+            }
+            if (typeof va === 'string') {
+              return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+            }
+            return 0;
+          });
+          rows.forEach(r => tbody.appendChild(r));
+        });
+      });
+    }
+
+    // Upload with conflict detection
+    const zone = document.getElementById('upload-zone');
+    const input = document.getElementById('file-input');
+    const progress = document.getElementById('upload-progress');
+    const fill = document.getElementById('progress-fill');
+    const text = document.getElementById('progress-text');
+    const token = '{{ token }}';
+    const allowsDownload = {{ allows_download }};
+
+    if (zone) {
+      zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+      zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('drag-over');
+        doUpload(e.dataTransfer.files, false);
+      });
+      input.addEventListener('change', () => { doUpload(input.files, false); input.value = ''; });
+    }
+
+    function doUpload(files, overwrite) {
+      if (!files.length) return;
+      progress.classList.add('active');
+      fill.style.width = '0%';
+      text.textContent = 'Uploading ' + files.length + ' file(s)...';
+
+      const fd = new FormData();
+      for (const f of files) fd.append('file', f);
+
+      const url = '/share/' + token + (overwrite ? '?overwrite=true' : '');
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url);
+      xhr.upload.onprogress = e => {
+        if (e.lengthComputable) {
+          const pct = Math.round(e.loaded / e.total * 100);
+          fill.style.width = pct + '%';
+          text.textContent = 'Uploading... ' + pct + '%';
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          text.textContent = 'Done';
+          fill.style.width = '100%';
+          setTimeout(() => location.reload(), 400);
+        } else if (xhr.status === 409) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            if (data.error === 'files_exist' && data.conflicts) {
+              const names = data.conflicts.join(', ');
+              const msg = data.conflicts.length === 1
+                ? '"' + names + '" already exists. Overwrite?'
+                : data.conflicts.length + ' files already exist (' + names + '). Overwrite?';
+              if (confirm(msg)) {
+                doUpload(files, true);
+              } else {
+                text.textContent = 'Upload cancelled';
+                fill.style.width = '0%';
+              }
+            }
+          } catch(e) {
+            text.textContent = 'Upload failed';
+            fill.style.width = '0%';
+          }
+        } else {
+          text.textContent = 'Failed: ' + xhr.responseText;
+          fill.style.width = '0%';
+        }
+      };
+      xhr.onerror = () => { text.textContent = 'Network error'; };
+      xhr.send(fd);
+    }
+  </script>
+</body>
+</html>
