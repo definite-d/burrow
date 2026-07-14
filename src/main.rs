@@ -4,7 +4,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use burrow::config;
 use burrow::share;
-use burrow::tunnel::{self, Tunnel};
+use burrow::tunnel;
 
 #[tokio::main]
 async fn main() {

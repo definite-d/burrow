@@ -1,7 +1,6 @@
 use std::process::Stdio;
 use tokio::process::{Child, Command};
-
-use super::Tunnel;
+use tokio::sync::oneshot;
 
 pub struct SpawnedTunnel {
     child: Option<Child>,
@@ -11,89 +10,59 @@ impl SpawnedTunnel {
     pub fn new() -> Self {
         Self { child: None }
     }
+
+    pub async fn start(&mut self, port: u16) -> Result<String, String> {
+        let cfd = find_cloudflared().await?;
+
+        let mut child = Command::new(cfd)
+            .args([
+                "tunnel",
+                "--url",
+                &format!("http://localhost:{port}"),
+                "--no-autoupdate",
+                "--protocol",
+                "http2",
+            ])
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| format!("failed to spawn cloudflared: {e}"))?;
+
+        let stderr = child.stderr.take().unwrap();
+        let reader = tokio::io::BufReader::new(stderr);
+        let mut lines = tokio::io::AsyncBufReadExt::lines(reader);
+
+        let (tx, rx) = oneshot::channel();
+
+        // Background task: drain stderr (keeps pipe open) and forward the URL.
+        tokio::spawn(async move {
+            let mut url_tx = Some(tx);
+            while let Ok(Some(line)) = lines.next_line().await {
+                tracing::debug!("cloudflared: {line}");
+                if let Some(url) = parse_tunnel_url(&line) {
+                    if let Some(tx) = url_tx.take() {
+                        let _ = tx.send(url);
+                    }
+                }
+            }
+        });
+
+        let url = rx.await.map_err(|_| "cloudflared exited before printing tunnel URL")?;
+        self.child = Some(child);
+        Ok(url)
+    }
+
+    pub async fn stop(&mut self) {
+        if let Some(mut child) = self.child.take() {
+            tracing::info!("Stopping cloudflared tunnel");
+            let _ = child.kill().await;
+        }
+    }
 }
 
 impl Default for SpawnedTunnel {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-impl Tunnel for SpawnedTunnel {
-    fn start(
-        &mut self,
-        port: u16,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>>
-    {
-        Box::pin(async move {
-            let which = Command::new("which")
-                .arg("cloudflared")
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .output()
-                .await;
-
-            match which {
-                Ok(out) if !out.status.success() => {
-                    return Err(
-                        "cloudflared not found in PATH.\n\
-                         Install: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/"
-                            .into(),
-                    );
-                }
-                Err(e) => {
-                    return Err(format!("failed to check for cloudflared: {e}"));
-                }
-                _ => {}
-            }
-
-            let mut child = Command::new("cloudflared")
-                .args([
-                    "tunnel",
-                    "--url",
-                    &format!("http://localhost:{port}"),
-                    "--no-autoupdate",
-                    "--protocol",
-                    "http2",
-                ])
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .spawn()
-                .map_err(|e| format!("failed to spawn cloudflared: {e}"))?;
-
-            let stderr = child.stderr.take().unwrap();
-            let reader = tokio::io::BufReader::new(stderr);
-            let mut lines = tokio::io::AsyncBufReadExt::lines(reader);
-
-            let url = loop {
-                if let Some(line) = lines
-                    .next_line()
-                    .await
-                    .map_err(|e| format!("failed to read cloudflared output: {e}"))?
-                {
-                    tracing::debug!("cloudflared: {line}");
-                    if let Some(url) = parse_tunnel_url(&line) {
-                        break url;
-                    }
-                } else {
-                    return Err("cloudflared exited before printing tunnel URL".into());
-                }
-            };
-
-            let _ = child.stdout.take();
-            self.child = Some(child);
-
-            Ok(url)
-        })
-    }
-
-    fn stop(&mut self) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + '_>> {
-        Box::pin(async {
-            if let Some(mut child) = self.child.take() {
-                tracing::info!("Stopping cloudflared tunnel");
-                let _ = child.kill().await;
-            }
-        })
     }
 }
 
@@ -103,6 +72,36 @@ impl Drop for SpawnedTunnel {
             let _ = child.start_kill();
         }
     }
+}
+
+async fn find_cloudflared() -> Result<String, String> {
+    // Try PATH first (standard behavior)
+    if Command::new("cloudflared")
+        .arg("version")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .await
+        .is_ok()
+    {
+        return Ok("cloudflared".into());
+    }
+
+    // Fall back to same directory as this binary
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let local = dir.join("cloudflared");
+            if local.exists() {
+                return Ok(local.to_string_lossy().into_owned());
+            }
+        }
+    }
+
+    Err(
+        "cloudflared not found in PATH or next to the binary.\n\
+         Install: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/"
+            .into(),
+    )
 }
 
 fn parse_tunnel_url(line: &str) -> Option<String> {
