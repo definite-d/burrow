@@ -11,7 +11,9 @@ async fn main() {
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::try_from_default_env()
             .unwrap_or_else(|_| "burrow=debug,tower_http=debug".into()))
-        .with(tracing_subscriber::fmt::layer())
+        .with(tracing_subscriber::fmt::layer()
+            .with_timer(tracing_subscriber::fmt::time::Uptime::default())
+            .with_target(false))
         .init();
 
     let cli = config::Cli::parse();
@@ -35,33 +37,33 @@ async fn main() {
 
     tracing::info!("Burrow v{}", env!("CARGO_PKG_VERSION"));
     tracing::info!("Serving: {}", serve_dir.display());
-    tracing::info!("Listening on {addr}");
-
-    let mut tunnel_handle: Option<tunnel::spawned::SpawnedTunnel> = None;
-    let mut tunnel_url = String::new();
 
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap_or_else(|e| {
         eprintln!("Failed to bind to {addr}: {e}");
         std::process::exit(1);
     });
+    tracing::info!("Listening on {addr}");
 
-    if config.tunnel_enabled() {
+    let mut tunnel_handle: Option<tunnel::spawned::SpawnedTunnel> = None;
+
+    let tunnel_url = if config.tunnel_enabled() {
         tracing::info!("Tunnel: enabled (cloudflared)");
         let mut spawned = tunnel::spawned::SpawnedTunnel::new();
         match spawned.start(config.port()).await {
             Ok(url) => {
                 tracing::info!("Public URL: {url}");
-                tunnel_url = url;
                 tunnel_handle = Some(spawned);
+                url
             }
             Err(e) => {
-                eprintln!("Failed to start tunnel: {e}");
-                eprintln!("Starting in local-only mode.");
+                eprintln!("Tunnel failed: {e}");
+                std::process::exit(1);
             }
         }
     } else {
         tracing::info!("Tunnel: disabled");
-    }
+        String::new()
+    };
 
     let app = burrow::server::router(serve_dir, share_store, tunnel_url);
 

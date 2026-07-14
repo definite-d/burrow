@@ -53,6 +53,8 @@ impl Tunnel for SpawnedTunnel {
                     "--url",
                     &format!("http://localhost:{port}"),
                     "--no-autoupdate",
+                    "--protocol",
+                    "http2",
                 ])
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
@@ -106,11 +108,20 @@ impl Drop for SpawnedTunnel {
 fn parse_tunnel_url(line: &str) -> Option<String> {
     let idx = line.find("https://")?;
     let rest = &line[idx..];
-    if !rest.contains("trycloudflare.com") {
+    if !rest.starts_with("https://") {
         return None;
     }
-    let end = rest
-        .find(|c: char| c.is_whitespace() || c == '"' || c == '\'' || c == ')' || c == ',')
+    let after_scheme = &rest["https://".len()..];
+    let domain_end = after_scheme.find(|c: char| c == '/' || c == '"' || c == '\'' || c.is_whitespace())?;
+    let domain = &after_scheme[..domain_end];
+    if !domain.ends_with(".trycloudflare.com") {
+        return None;
+    }
+    let full_end = rest.find(|c: char| c.is_whitespace() || c == '"' || c == '\'' || c == ')' || c == ',')
         .unwrap_or(rest.len());
-    Some(rest[..end].to_string())
+    let url = rest[..full_end].to_string();
+    if url.contains("/tunnel") || url.contains("api.") {
+        return None;
+    }
+    Some(url)
 }
