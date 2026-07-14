@@ -32,14 +32,14 @@ fn error_page(status: StatusCode, title: &str, message: &str) -> String {
 <title>{title} — Burrow</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pangolin&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {{
     --bg: #f8f5f0; --surface: #fff; --border: #e8e2d9;
     --text: #2c2416; --text-muted: #a89d8e; --accent: #c2752e;
     --danger: #b44a3f; --danger-bg: #fdf0ee; --danger-border: #e8b5b0;
-    --font-display: 'Quicksand', system-ui, sans-serif;
-    --font-body: 'Quicksand', system-ui, sans-serif;
+    --font-display: 'Pangolin', system-ui, sans-serif;
+    --font-body: 'Pangolin', system-ui, sans-serif;
     --font-mono: 'Fira Code', monospace;
     --radius: 6px;
   }}

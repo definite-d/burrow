@@ -109,9 +109,9 @@ fn error_page_html(status: u16, title: &str, message: &str) -> String {
 <title>{title} — Burrow</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pangolin&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root {{ --bg: #f8f5f0; --surface: #fff; --border: #e8e2d9; --text: #2c2416; --text-muted: #a89d8e; --accent: #c2752e; --danger: #b44a3f; --font-display: 'Quicksand', system-ui, sans-serif; --font-body: 'Quicksand', system-ui, sans-serif; --radius: 6px; }}
+  :root {{ --bg: #f8f5f0; --surface: #fff; --border: #e8e2d9; --text: #2c2416; --text-muted: #a89d8e; --accent: #c2752e; --danger: #b44a3f; --font-display: 'Pangolin', system-ui, sans-serif; --font-body: 'Pangolin', system-ui, sans-serif; --radius: 6px; }}
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
   body {{ font-family: var(--font-body); background: var(--bg); color: var(--text); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; }}
   .card {{ background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 3rem 2.5rem; max-width: 440px; text-align: center; }}
