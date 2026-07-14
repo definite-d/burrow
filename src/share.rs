@@ -135,10 +135,20 @@ impl ShareStore {
         let mut loaded = Vec::new();
         for cs in config_shares {
             let path = PathBuf::from(&cs.path);
-            if !path.exists() {
-                tracing::warn!("config share '{}' path does not exist: {}", cs.id, cs.path);
-                continue;
-            }
+            let path = if path.is_relative() {
+                std::env::current_dir()
+                    .map(|cwd| cwd.join(&path))
+                    .unwrap_or(path)
+            } else {
+                path
+            };
+            let path = match path.canonicalize() {
+                Ok(p) => p,
+                Err(e) => {
+                    tracing::warn!("config share '{}' path error: {e}", cs.id);
+                    continue;
+                }
+            };
 
             let mode = cs.mode.clone().unwrap_or_default();
             let expires = cs.expires.as_deref().and_then(parse_duration);

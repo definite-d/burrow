@@ -76,12 +76,16 @@ pub async fn share_create(
     };
 
     let path = std::path::PathBuf::from(&form.path);
-    if !path.exists() {
-        return Ok(Html(format!(
-            "<p style='color:red'>Path does not exist: {}</p>",
-            form.path
-        )));
-    }
+    let path = if path.is_relative() {
+        std::env::current_dir()
+            .map(|cwd| cwd.join(&path))
+            .unwrap_or(path)
+    } else {
+        path
+    };
+    let path = path.canonicalize().map_err(|e| {
+        AppError::BadRequest(format!("Could not resolve path {}: {e}", form.path))
+    })?;
 
     let expires = form.expires.as_deref().and_then(parse_duration_display);
 
