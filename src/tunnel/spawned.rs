@@ -87,12 +87,26 @@ async fn find_cloudflared() -> Result<String, String> {
         return Ok("cloudflared".into());
     }
 
-    // Fall back to same directory as this binary
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(dir) = exe.parent() {
-            let local = dir.join("cloudflared");
-            if local.exists() {
-                return Ok(local.to_string_lossy().into_owned());
+    // Search candidates: next to binary, then CWD
+    let candidates = [
+        std::env::current_exe().ok().and_then(|p| p.parent().map(|p| p.to_path_buf())),
+        std::env::current_dir().ok(),
+    ];
+
+    for dir in candidates.into_iter().flatten() {
+        // Exact match first
+        let exact = if cfg!(windows) { "cloudflared.exe" } else { "cloudflared" };
+        let path = dir.join(exact);
+        if path.exists() {
+            return Ok(path.to_string_lossy().into_owned());
+        }
+        // Glob fallback for renamed binaries (e.g. cloudflared-windows-amd64.exe)
+        if let Ok(entries) = std::fs::read_dir(&dir) {
+            for entry in entries.flatten() {
+                let s = entry.file_name().to_string_lossy().to_lowercase();
+                if s.starts_with("cloudflared") && (s.ends_with(".exe") || !cfg!(windows)) {
+                    return Ok(entry.path().to_string_lossy().into_owned());
+                }
             }
         }
     }
