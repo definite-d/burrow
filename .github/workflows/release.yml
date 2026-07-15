@@ -36,7 +36,7 @@ jobs:
         if: matrix.archive == 'tar.gz'
         run: |
           cd target/${{ matrix.target }}/release
-          tar czf ../../../../burrow-${{ github.ref_name }}-${{ matrix.target }}.tar.gz burrow
+          tar czf ../../../burrow-${{ github.ref_name }}-${{ matrix.target }}.tar.gz burrow
 
       - name: Package (Windows)
         if: matrix.archive == 'zip'
